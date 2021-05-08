@@ -1,0 +1,583 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Unit 5 - Financial Planning\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Initial imports\n",
+    "import os\n",
+    "import requests\n",
+    "import pandas as pd\n",
+    "from dotenv import load_dotenv\n",
+    "import alpaca_trade_api as tradeapi\n",
+    "from MCForecastTools import MCSimulation\n",
+    "\n",
+    "%matplotlib inline"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Load .env enviroment variables\n",
+    "load_dotenv()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Part 1 - Personal Finance Planner"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Collect Crypto Prices Using the `requests` Library"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set current amount of crypto assets\n",
+    "my_btc = 1.2\n",
+    "my_eth = 5.3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Crypto API URLs\n",
+    "btc_url = \"https://api.alternative.me/v2/ticker/Bitcoin/?convert=CAD\"\n",
+    "eth_url = \"https://api.alternative.me/v2/ticker/Ethereum/?convert=CAD\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Fetch current BTC price\n",
+    "res = requests.get(btc_url)\n",
+    "btc_value = res.json()[\"data\"][\"1\"][\"quotes\"][\"USD\"][\"price\"]\n",
+    "\n",
+    "# Fetch current ETH price\n",
+    "res = requests.get(eth_url)\n",
+    "eth_value = res.json()[\"data\"][\"1027\"][\"quotes\"][\"USD\"][\"price\"]\n",
+    "# Compute current value of my crpto\n",
+    "my_btc_value = btc_value * my_btc\n",
+    "my_eth_value = eth_value * my_eth\n",
+    "\n",
+    "# Print current crypto wallet balance\n",
+    "print(f\"The current value of your {my_btc} BTC is ${my_btc_value:0.2f}\")\n",
+    "print(f\"The current value of your {my_eth} ETH is ${my_eth_value:0.2f}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Collect Investments Data Using Alpaca: `SPY` (stocks) and `AGG` (bonds)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Current amount of shares\n",
+    "my_agg = 200\n",
+    "my_spy = 50"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set Alpaca API key and secret\n",
+    "APCA_API_BASE_URL = \"https://paper-api.alpaca.markets\"\n",
+    "APCA_API_KEY_ID = \"PKEFE0RIZWTBJYZO3586\"\n",
+    "APCA_API_SECRET_KEY = \"9tCDvzED35KgQFsz5aV8uwzzyHQslYLIrvkIOqsx\"\n",
+    "# Create the Alpaca API object\n",
+    "api = tradeapi.REST(APCA_API_KEY_ID, APCA_API_SECRET_KEY)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Format current date as ISO format\n",
+    "import datetime\n",
+    "current_date = datetime.datetime.now().isoformat()\n",
+    "\n",
+    "# Set the tickers\n",
+    "tickers = [\"AGG\", \"SPY\"]\n",
+    "\n",
+    "# Set timeframe to '1D' for Alpaca API\n",
+    "timeframe = \"1D\"\n",
+    "\n",
+    "# Get current closing prices for SPY and AGG\n",
+    "df = api.get_barset(tickers, timeframe, limit=1, start=current_date).df\n",
+    "\n",
+    "# Preview DataFrame\n",
+    "print(df['AGG'].close)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Pick AGG and SPY close prices\n",
+    "agg_close_price = df['AGG']['close'][0]\n",
+    "spy_close_price = df['SPY']['close'][0]\n",
+    "# Print AGG and SPY close prices\n",
+    "print(f\"Current AGG closing price: ${agg_close_price}\")\n",
+    "print(f\"Current SPY closing price: ${spy_close_price}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Compute the current value of shares\n",
+    "my_spy_value = spy_close_price * my_spy\n",
+    "my_agg_value = agg_close_price * my_agg\n",
+    "\n",
+    "# Print current value of share\n",
+    "print(f\"The current value of your {my_spy} SPY shares is ${my_spy_value:0.2f}\")\n",
+    "print(f\"The current value of your {my_agg} AGG shares is ${my_agg_value:0.2f}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Savings Health Analysis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set monthly household income\n",
+    "monthly_income = 12000\n",
+    "\n",
+    "# Create savings DataFrame\n",
+    "data = [ my_btc_value + my_eth_value, my_agg_value + my_spy_value]\n",
+    "df_savings = pd.DataFrame(data, columns = [\"amount\"], index =[\"crypto\", \"shares\"])\n",
+    "\n",
+    "# Display savings DataFrame\n",
+    "display(df_savings)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot savings pie chart\n",
+    "plot = df_savings.plot.pie(y=\"amount\", figsize=(5, 5))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set ideal emergency fund\n",
+    "emergency_fund = monthly_income * 3\n",
+    "\n",
+    "# Calculate total amount of savings\n",
+    "savings = df_savings['amount'].sum()\n",
+    "\n",
+    "# Validate saving health\n",
+    "if savings > emergency_fund:\n",
+    "    print(\"Congratulations!! You have enough funds\")\n",
+    "elif savings == emergency_fund:\n",
+    "    print(\"Congratulations!! You have reached you goal\")\n",
+    "else:\n",
+    "    print(emergency_fund - savings, \" is the amount that remains to reach you goal\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Part 2 - Retirement Planning\n",
+    "\n",
+    "### Monte Carlo Simulation"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set start and end dates of five years back from today.\n",
+    "# Sample results may vary from the solution based on the time frame chosen\n",
+    "start_date = pd.Timestamp('2015-08-07', tz='America/New_York').isoformat()\n",
+    "end_date = pd.Timestamp('2020-08-07', tz='America/New_York').isoformat()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get 5 years' worth of historical data for SPY and AGG\n",
+    "df_stock_data = api.get_barset(tickers, timeframe, start=start_date, end=end_date).df\n",
+    "\n",
+    "# Display sample data\n",
+    "df_stock_data.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Configuring a Monte Carlo simulation to forecast 30 years cumulative returns\n",
+    "MC_30 = MCSimulation(portfolio_data = df_stock_data, weights = [.40,.60], num_simulation = 500, num_trading_days = 252*30)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Printing the simulation input data\n",
+    "MC_30.portfolio_data.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Running a Monte Carlo simulation to forecast 30 years cumulative returns\n",
+    "MC_30.calc_cumulative_return()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot simulation outcomes\n",
+    "MC_30.plot_simulation()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot probability distribution and confidence intervals\n",
+    "MC_30.plot_distribution()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Retirement Analysis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Fetch summary statistics from the Monte Carlo simulation results\n",
+    "summary = MC_30.summarize_cumulative_return()\n",
+    "# Print summary statistics\n",
+    "print(summary)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Calculate the expected portfolio return at the 95% lower and upper confidence intervals based on a `$20,000` initial investment."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set initial investment\n",
+    "initial_investment = 20000\n",
+    "\n",
+    "# Use the lower and upper `95%` confidence intervals to calculate the range of the possible outcomes of our $20,000\n",
+    "ci_lower = round(summary[8]*20000,2)\n",
+    "ci_upper = round(summary[9]*20000,2)\n",
+    "\n",
+    "# Print results\n",
+    "print(f\"There is a 95% chance that an initial investment of ${initial_investment} in the portfolio\"\n",
+    "      f\" over the next 30 years will end within in the range of\"\n",
+    "      f\" ${ci_lower} and ${ci_upper}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Calculate the expected portfolio return at the `95%` lower and upper confidence intervals based on a `50%` increase in the initial investment."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set initial investment\n",
+    "initial_investment = 20000 * 1.5\n",
+    "\n",
+    "# Use the lower and upper `95%` confidence intervals to calculate the range of the possible outcomes of our $30,000\n",
+    "ci_lower = round(summary[8]*30000,2)\n",
+    "ci_upper = round(summary[9]*30000,2)\n",
+    "\n",
+    "# Print results\n",
+    "print(f\"There is a 95% chance that an initial investment of ${initial_investment} in the portfolio\"\n",
+    "      f\" over the next 30 years will end within in the range of\"\n",
+    "      f\" ${ci_lower} and ${ci_upper}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Optional Challenge - Early Retirement\n",
+    "\n",
+    "\n",
+    "### Five Years Retirement Option"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Configuring a Monte Carlo simulation to forecast 5 years cumulative returns\n",
+    "MC_5 = MCSimulation(portfolio_data = df_stock_data, weights = [.40,.60], num_simulation = 500,num_trading_days = 252*5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Running a Monte Carlo simulation to forecast 5 years cumulative returns\n",
+    "MC_5.calc_cumulative_return()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot simulation outcomes\n",
+    "MC_5.plot_simulation()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot probability distribution and confidence intervals\n",
+    "MC_5.plot_distribution()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Fetch summary statistics from the Monte Carlo simulation results\n",
+    "summary = MC_5.summarize_cumulative_return()\n",
+    "\n",
+    "# Print summary statistics\n",
+    "print(summary)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set initial investment\n",
+    "initial_investment = 20000 * 3\n",
+    "\n",
+    "# Use the lower and upper `95%` confidence intervals to calculate the range of the possible outcomes of our $60,000\n",
+    "ci_lower_five = round(summary[8]*60000,2)\n",
+    "ci_upper_five = round(summary[9]*60000,2)\n",
+    "\n",
+    "# Print results\n",
+    "print(f\"There is a 95% chance that an initial investment of ${initial_investment} in the portfolio\"\n",
+    "      f\" over the next 5 years will end within in the range of\"\n",
+    "      f\" ${ci_lower_five} and ${ci_upper_five}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Ten Years Retirement Option"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Configuring a Monte Carlo simulation to forecast 10 years cumulative returns\n",
+    "MC_10 = MCSimulation(portfolio_data = df_stock_data, weights = [.40,.60], num_simulation = 500,num_trading_days = 252*5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Running a Monte Carlo simulation to forecast 10 years cumulative returns\n",
+    "MC_10.calc_cumulative_return()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot simulation outcomes\n",
+    "MC_10.plot_simulation()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot probability distribution and confidence intervals\n",
+    "MC_10.plot_distribution()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Fetch summary statistics from the Monte Carlo simulation results\n",
+    "summary = MC_10.summarize_cumulative_return()\n",
+    "\n",
+    "# Print summary statistics\n",
+    "print(summary)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set initial investment\n",
+    "initial_investment = 20000 * 3\n",
+    "\n",
+    "# Use the lower and upper `95%` confidence intervals to calculate the range of the possible outcomes of our $60,000\n",
+    "ci_lower_ten = round(summary[8]*60000,2)\n",
+    "ci_upper_ten = round(summary[9]*60000,2)\n",
+    "\n",
+    "# Print results\n",
+    "print(f\"There is a 95% chance that an initial investment of ${initial_investment} in the portfolio\"\n",
+    "      f\" over the next 10 years will end within in the range of\"\n",
+    "      f\" ${ci_lower_ten} and ${ci_upper_ten}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "name": "python391jvsc74a57bd0ac59ebe37160ed0dfa835113d9b8498d9f09ceb179beaac4002f036b9467c963",
+   "display_name": "Python 3.9.1 64-bit"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.1"
+  },
+  "metadata": {
+   "interpreter": {
+    "hash": "ac59ebe37160ed0dfa835113d9b8498d9f09ceb179beaac4002f036b9467c963"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
